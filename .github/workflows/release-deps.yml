@@ -1,0 +1,82 @@
+name: release-deps
+
+# 面捕依赖包（约 94 MB）单独发布，不打进插件 zip。
+# 依赖体积大且很少变动，与插件分开可以让插件保持 110 KB 便于频繁更新。
+#
+# 触发方式：手动触发，需提供依赖目录的下载地址或自行上传。
+on:
+  workflow_dispatch:
+    inputs:
+      deps_url:
+        description: "依赖 zip 的下载地址（可选，留空则只做说明）"
+        required: false
+        default: ""
+
+permissions:
+  contents: write
+
+jobs:
+  note:
+    name: 依赖包说明
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 检出代码
+        uses: actions/checkout@v4
+
+      - name: 生成依赖包说明
+        run: |
+          python - <<'PY'
+          import os
+          text = """## 面捕依赖包
+
+本仓库的 Releases 中，`deps` 标签下的包为**面捕依赖**，与插件本体分开。
+
+### 为什么分开
+
+| 项目 | 大小 | 更新频率 |
+| --- | --- | --- |
+| 插件本体 | 约 110 KB | 频繁 |
+| 面捕依赖 | 约 94 MB | 极少 |
+
+依赖打包进主包会让每次插件更新都要重下 94 MB，因此分开分发。
+
+### 内容
+
+    _blpy_nodeps/
+      cv2                      opencv 5.0.0，负责抓帧
+      mediapipe                mediapipe 1.0.1，负责推理
+      face_landmarker.task     FaceLandmarker 模型，3.6 MB
+      matplotlib               mediapipe 的硬依赖
+      PIL / fontTools          matplotlib 的下游
+      sounddevice              提示音
+
+### 注意
+
+依赖包**不含 numpy**。numpy 复用 Blender 自带的 1.26.4，
+若被依赖包里的版本覆盖会导致面捕无法启动。
+
+### 安装
+
+1. 下载依赖包并解压
+2. 把 `_blpy_nodeps` 目录放到插件目录下
+3. 或在 Blender 面板中：面部捕捉 > 安装面捕依赖 > 从指定目录/zip 部署
+
+插件会自动在以下位置查找依赖（按优先级）：
+
+    <插件目录>/_blpy_nodeps
+    <插件目录的兄弟目录>/_blpy_nodeps
+    <Blender 用户 addons>/_blpy_nodeps
+    <Blender 用户目录>/ez_v2b_facecap_deps
+    <当前工作目录>/_blpy_nodeps
+"""
+          with open("DEPS_README.md", "w", encoding="utf-8", newline="\\n") as f:
+              f.write(text)
+          print("已生成 DEPS_README.md（%d 字节）" % len(text.encode("utf-8")))
+          PY
+
+      - name: 上传说明
+        uses: actions/upload-artifact@v4
+        with:
+          name: deps-readme
+          path: DEPS_README.md

@@ -1,0 +1,35 @@
+# Blender 附加组件产物
+ez_v2b_animation.zip
+ez_v2b_animation_single.py
+SHA256SUMS.txt
+
+# 面捕依赖（体积大，单独分发，不进仓库）
+_blpy_nodeps/
+_blpy_deps/
+ez_v2b_facecap_deps.zip
+
+# 打包脚本的日志产物
+tools/*.txt
+update.json
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+
+# Blender
+*.blend1
+*.blend2
+
+# 编辑器与系统
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# 临时目录
+_release/
+tmp/
+temp/
