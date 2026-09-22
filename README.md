@@ -455,13 +455,17 @@ Mafuyu 回归通过，无重复占用
 
 ### 依赖部署（重要）
 
-面捕依赖 **93.9 MB（解压后 250.8 MB / 1557 文件）**，与主插件（98 KB）**分开分发**——
+面捕依赖 **93.9 MB（解压后 250.8 MB / 1557 文件）**，与主插件（约 116 KB）**分开分发**。
 主插件保持小体积便于频繁更新，依赖只在首次安装时下一次。
 
-| 文件 | 大小 | 内容 |
+| 文件 | 大小 | 说明 |
 | --- | --- | --- |
-| `ez_v2b_animation.zip` | 98 KB | 插件本体，从磁盘安装 |
+| `ez_v2b_animation.zip` | 约 116 KB | 插件本体，从磁盘安装 |
+| `ez_v2b_animation_single.py` | 约 147 KB | 单文件版，供文本块或快速分发 |
 | `ez_v2b_facecap_deps.zip` | 93.9 MB | 面捕依赖，解压即用 |
+| `SHA256SUMS.txt` | 200 字节 | 校验和 |
+
+全部产物都在 [Releases](../../releases/latest) 页面下载。
 
 **安装依赖（三选一）**：
 
@@ -490,6 +494,24 @@ Mafuyu 回归通过，无重复占用
  PIL / fontTools       25.2 MB   matplotlib 的下游
  numpy                           **绝不能包含** —— 会顶掉 Blender 自带的 1.26.4
 ```
+
+**校验下载的文件**：
+
+```bash
+sha256sum -c SHA256SUMS.txt
+```
+
+Windows 上可以用：
+
+```powershell
+Get-FileHash ez_v2b_animation.zip -Algorithm SHA256
+```
+
+对照 `SHA256SUMS.txt` 里的值即可。
+
+> **注意**：`SHA256SUMS.txt` 里的哈希是对 **Release 页面上的产物**计算的。
+> Release 里的 zip 由 CI 重新构建，与本地开发目录的产物不是同一份文件，
+> 哈希自然也不同。核对时请以下载到的文件为准。
 
 > **踩过的坑**：原开发版把 `FACECAP_HOME = r"D:\...\karin_ik_tools"`（开发机绝对路径）
 > 写进了代码，并且放在查找顺序第一位。本地开发时能跑，**分发给用户后必然失效**——
