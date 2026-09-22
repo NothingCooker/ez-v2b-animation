@@ -502,10 +502,13 @@ class EZ_PT_main(bpy.types.Panel):
     def draw(self, context):
         layout = self.layout
 
-        # ---- 署名 ----
+        # ---- 署名与定位 ----
         _sb = layout.row(align=True)
         _sb.alignment = "CENTER"
-        _sb.label(text="作者  B站 @高压郭炖大葱", icon="INFO")
+        _sb.label(text="面向 VRChat 模型优化", icon="INFO")
+        _sb2 = layout.row(align=True)
+        _sb2.alignment = "CENTER"
+        _sb2.label(text="作者  B站 @高压郭炖大葱")
 
         arms = _armatures()
         row = layout.row(align=True)
