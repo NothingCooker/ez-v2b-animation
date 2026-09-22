@@ -2,7 +2,7 @@
 """ez-v2b-animation :: 面向 VRChat 模型优化的一键 IK 化工具
 
 作者     B站 @高压郭炖大葱
-版本     1.0.0
+版本     1.0.1
 
 主要面向 VRChat 模型的优化与改造。VRChat 模型（VRM / VRChat 导出 / MMD 转换）
 普遍存在这几个问题：
@@ -52,12 +52,12 @@
 # 署名（统一在这里，各模块引用同一份）
 __author__ = "B站 @高压郭炖大葱"
 __bilibili__ = "@高压郭炖大葱"
-__version__ = (1, 0, 0)
+__version__ = (1, 0, 1)
 
 bl_info = {
     "name": "ez-v2b-animation",
     "author": "B站 @高压郭炖大葱",
-    "version": (1, 0, 0),
+    "version": (1, 0, 1),
     "blender": (4, 0, 0),
     "location": "View3D > Sidebar (N) > EZ V2B",
     "description": "面向 VRChat 模型优化：任意人形骨架一键 IK 化，含结构发现、补手柄、IKFK、控制器、纹理打包",

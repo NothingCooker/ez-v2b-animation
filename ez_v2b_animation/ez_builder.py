@@ -1179,9 +1179,45 @@ def _ensure_root_hips(arm, info, rep, step, warn):
 
     upd(4)
 
-    # 层级：控制器骨骼全部挂到 Root
+    # ---------- 层级：控制器挂到 Root，**骨架主干也要挂**
+    #
+    # 这里有两个实测踩过的坑（用户报「root ik 不会带动角色移动，只会带动手柄移动」）：
+    #
+    # 坑一：ez_Root 是**新建的骨骼**，不在原来的骨架主干上。
+    #       只把控制器挂到它下面的话，拖 ez_Root 只会带动手柄，
+    #       骨架本体（Hips/Spine/Head）纹丝不动 —— 实测本体位移 0.00000。
+    #       必须把**主干根骨骼**（原骨架里无父级的那个）也挂到 ez_Root 下，
+    #       这样拖 Root 时整条主干连同控制器一起走。
+    #
+    # 坑二：切换器是**后面步骤（步骤 9）才创建的**，
+    #       这里按名字前缀去找时它们还不存在，于是 4 个切换器永远挂不上
+    #       （实测 ez_Root 只有 10 个子级，应该是 14 个）。
+    #       修法：这里不再找切换器，改由步骤 9 建完后自己挂到 Root 下。
     if arm.data.bones.get(root_name):
-        with EditBones(arm) as eb:
+        # 主干根：原来的无父级骨骼（discover 认定的 root），排除 ez 自己建的
+        trunk_root = info.get("root")
+        if trunk_root == root_name or not eb_exists(eb, trunk_root or ""):
+            # discover 给的 root 可能已被替换，重新找一个真正的主干根
+            trunk_root = None
+            for b in arm.data.bones:
+                if b.parent is None and b.name != root_name \
+                        and not b.name.startswith("ez_") \
+                        and not D.norm(b.name).startswith("ikfk"):
+                    # 取子孙最多的那个（最可能是主干根）
+                    if trunk_root is None or \
+                            len(D._all_desc(arm, b.name)) > \
+                            len(D._all_desc(arm, trunk_root)):
+                        trunk_root = b.name
+
+        with EditBones(arm) as eb2:
+            # 1) 主干根挂到 ez_Root 下（这是"带动角色"的关键）
+            if trunk_root and trunk_root != root_name and eb2.get(trunk_root):
+                eb2[trunk_root].parent = eb2[root_name]
+                eb2[trunk_root].use_connect = False
+                step("主干根 %s 挂到 %s 下（拖 Root 时本体跟随）" % (
+                    trunk_root, root_name))
+
+            # 2) 控制器挂到 ez_Root 下
             names = [info["ik"]["limbs"][l][s]["handle"]
                      for l in ("arm", "leg") for s in ("L", "R")
                      if info["ik"]["limbs"][l].get(s)]
@@ -1192,17 +1228,21 @@ def _ensure_root_hips(arm, info, rep, step, warn):
                 names.append(info["ik"]["head"]["handle"])
             if hips_ctrl:
                 names.append(hips_ctrl)
-            for b in arm.data.bones:
-                if D.norm(b.name).startswith("ikfk"):
-                    names.append(b.name)
+            n_ok = 0
             for n in names:
-                if eb_exists(eb, n) and n != root_name:
-                    eb[n].parent = eb[root_name]
-                    eb[n].use_connect = False
+                if eb2.get(n) and n != root_name and n != trunk_root:
+                    eb2[n].parent = eb2[root_name]
+                    eb2[n].use_connect = False
+                    n_ok += 1
+            step("控制器 %d 个挂到 %s 下（切换器由步骤 9 自行挂载）" % (
+                n_ok, root_name))
+
+        info["trunk_root"] = trunk_root
     upd(3)
     info["root"] = root_name
     info["hips_ctrl"] = hips_ctrl
-    step("根控制器 %s；Hips 控制器 %s；全部控制器挂到根下" % (root_name, hips_ctrl))
+    step("根控制器 %s；Hips 控制器 %s；主干根 %s" % (
+        root_name, hips_ctrl, info.get("trunk_root")))
 
 
 # ---------------------------------------------------------------- 9. 切换器
@@ -1268,8 +1308,22 @@ def _ensure_switches(arm, info, rep, step, warn):
             for name, h, t in jobs:
                 eb_make(eb, name, tuple(h), tuple(t))
                 made_bones.append(name)
+            # **切换器也要挂到 Root 下**
+            #
+            # 实测踩过的坑：步骤 8 建 Root 时按名字前缀找切换器，
+            # 但切换器是**这一步才创建**的，那时还不存在 -> 永远挂不上。
+            # 实测 ez_Root 只有 10 个子级（应该是 14 个）。
+            # 修法：在这里（创建完之后）自己挂。
+            root_n = info.get("root")
+            if root_n and eb.get(root_n):
+                for name, _h, _t in jobs:
+                    if eb.get(name):
+                        eb[name].parent = eb[root_n]
+                        eb[name].use_connect = False
     upd(3)
     rep["created"]["bones"] += made_bones
+    if made_bones and info.get("root"):
+        step("切换器 %d 个已挂到 %s 下" % (len(made_bones), info.get("root")))
 
     if not arm.animation_data:
         arm.animation_data_create()
